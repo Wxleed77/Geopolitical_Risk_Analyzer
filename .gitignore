@@ -1,0 +1,42 @@
+# ==========================================
+# 1. Environment & Secrets (NEVER COMMIT!)
+# ==========================================
+.env
+.env.*
+!.env.example    # Keep an example template for other devs
+*.pem
+*.key
+
+# ==========================================
+# 2. Python & Virtual Environments
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+ENV/
+
+# ==========================================
+# 3. Node / Web Dependencies & Builds
+# ==========================================
+node_modules/
+dist/
+build/
+.next/
+
+# ==========================================
+# 4. Operating System & IDE Files
+# ==========================================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ==========================================
+# 5. Local Databases & Logs
+# ==========================================
+*.log
+*.sqlite3
+*.db
