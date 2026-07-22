@@ -1,0 +1,21 @@
+country_a_iso,country_b_iso,treaty_name,year_signed,alliance_type
+USA,GBR,North Atlantic Treaty (NATO),1949,collective_defense
+USA,FRA,North Atlantic Treaty (NATO),1949,collective_defense
+USA,DEU,North Atlantic Treaty (NATO),1955,collective_defense
+USA,ITA,North Atlantic Treaty (NATO),1949,collective_defense
+USA,CAN,North Atlantic Treaty (NATO),1949,collective_defense
+USA,POL,North Atlantic Treaty (NATO),1999,collective_defense
+USA,NOR,North Atlantic Treaty (NATO),1949,collective_defense
+USA,ESP,North Atlantic Treaty (NATO),1982,collective_defense
+USA,TUR,North Atlantic Treaty (NATO),1952,collective_defense
+USA,NLD,North Atlantic Treaty (NATO),1949,collective_defense
+USA,BEL,North Atlantic Treaty (NATO),1949,collective_defense
+USA,JPN,US-Japan Treaty of Mutual Cooperation and Security,1960,security_treaty
+USA,KOR,US-South Korea Mutual Defense Treaty,1953,security_treaty
+USA,AUS,ANZUS Treaty,1951,security_treaty
+CHN,PRK,Sino-North Korean Mutual Aid and Cooperation Friendship Treaty,1961,mutual_aid
+RUS,BLR,Collective Security Treaty Organization (CSTO),1992,collective_defense
+RUS,KAZ,Collective Security Treaty Organization (CSTO),1992,collective_defense
+RUS,ARM,Collective Security Treaty Organization (CSTO),1992,collective_defense
+RUS,KGZ,Collective Security Treaty Organization (CSTO),1992,collective_defense
+RUS,TJK,Collective Security Treaty Organization (CSTO),1992,collective_defense
