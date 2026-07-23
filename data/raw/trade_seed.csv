@@ -1,0 +1,19 @@
+# Illustrative bilateral goods-trade figures (~2023, USD), order-of-magnitude
+# from general knowledge - NOT pulled from UN Comtrade API (no network access
+# to comtrade.un.org in this environment). Good enough to prove the ingestion
+# -> scoring pipeline works end-to-end. DO NOT treat as authoritative for
+# real analysis - replace with a live Comtrade API pull before production use.
+#
+# partner_iso "WLD" follows UN Comtrade's own convention for "World" (a
+# country's total trade with everyone) - used here as the denominator for
+# trade_score, not a real country (seeded as a sentinel row in ingest script).
+reporter_iso,partner_iso,hs_sector_code,year,trade_value_usd,flow_type
+DEU,WLD,TOTAL,2023,3000000000000,total
+DEU,USA,TOTAL,2023,253000000000,total
+DEU,CHN,TOTAL,2023,270000000000,total
+JPN,WLD,TOTAL,2023,1500000000000,total
+JPN,USA,TOTAL,2023,230000000000,total
+JPN,CHN,TOTAL,2023,300000000000,total
+KOR,WLD,TOTAL,2023,1270000000000,total
+KOR,USA,TOTAL,2023,197000000000,total
+KOR,CHN,TOTAL,2023,260000000000,total
