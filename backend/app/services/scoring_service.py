@@ -124,10 +124,19 @@ def composite_score(
     weights: dict[str, float] = DEFAULT_WEIGHTS,
 ) -> ScoreResult:
     """
-    Weighted composite. Missing sub-scores are excluded and remaining
-    weights renormalized (so one missing data source doesn't silently
-    drag the composite toward 0) — but if ALL three are missing, the
-    composite itself is insufficient_data.
+    Weighted composite with a confidence penalty for missing sub-scores.
+
+    Naive renormalization (average only over available sub-scores) is
+    WRONG here: a country with only alliance data (e.g. NATO member,
+    score 100) would renormalize to composite=100 - outranking a
+    country with real trade+energy+alliance data averaging to 40. That
+    rewards having LESS data, which is backwards.
+
+    Fix: composite = (weighted average of available sub-scores) *
+    (fraction of total weight actually covered). A country missing
+    2 of 3 dimensions gets scaled down accordingly - incomplete data
+    can never outrank complete data on this metric alone. If ALL
+    three are missing, the composite itself is insufficient_data.
     """
     parts = [
         (trade, weights["trade"]),
@@ -141,8 +150,14 @@ def composite_score(
 
     total_weight = sum(w for _, w in available)
     weighted_sum = sum(v * w for v, w in available)
-    composite = weighted_sum / total_weight
+    raw_average = weighted_sum / total_weight
+    confidence = total_weight  # weights sum to 1.0 by design, so this is a 0-1 coverage fraction
+    composite = raw_average * confidence
 
     missing = [name for (s, _), name in zip(parts, ("trade", "energy", "alliance")) if s.insufficient_data]
-    detail = "all sub-scores available" if not missing else f"missing: {', '.join(missing)} (renormalized)"
+    detail = (
+        "all sub-scores available"
+        if not missing
+        else f"missing: {', '.join(missing)} (confidence-penalized, {confidence:.0%} data coverage)"
+    )
     return ScoreResult(round(composite, 2), False, detail)

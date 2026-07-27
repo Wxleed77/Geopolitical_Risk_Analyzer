@@ -1,0 +1,18 @@
+# Illustrative energy import dependency (~2023, % of country's imports of
+# that energy type sourced from given country), order-of-magnitude from
+# general knowledge - NOT pulled from EIA API (no network access to
+# eia.gov in this environment). Good enough to validate the pipeline
+# end-to-end, NOT precise enough for real analysis. Replace with a live
+# EIA API pull before production use.
+#
+# Real, well-documented trend captured here: India's crude oil imports
+# shifted heavily toward discounted Russian crude after 2022 (from near-0%
+# pre-2022 to a large share by 2023) - directionally accurate, exact
+# percentage approximate.
+country_iso,source_country_iso,year,import_share_pct,energy_type
+IND,RUS,2023,40.0,crude_oil
+IND,USA,2023,2.0,crude_oil
+DEU,RUS,2023,1.0,natural_gas
+DEU,USA,2023,15.0,natural_gas
+JPN,RUS,2023,9.0,crude_oil
+JPN,USA,2023,5.0,crude_oil

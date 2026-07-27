@@ -14,3 +14,12 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 def init_db() -> None:
     """Create all tables if they don't exist. Idempotent."""
     Base.metadata.create_all(bind=engine)
+
+
+def get_db():
+    """FastAPI dependency: yields a session, closes it after the request."""
+    session = SessionLocal()
+    try:
+        yield session
+    finally:
+        session.close()

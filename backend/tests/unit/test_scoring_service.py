@@ -99,9 +99,33 @@ def test_composite_score_renormalizes_on_missing_subscore():
     e = ScoreResult(None, True, "missing")
     a = ScoreResult(20.0, False, "")
     result = composite_score(t, e, a)
-    # weights renormalize over trade(0.40) + alliance(0.25) = 0.65
-    expected = (60.0 * 0.40 + 20.0 * 0.25) / 0.65
+    # available weight = trade(0.40) + alliance(0.25) = 0.65
+    # raw_average = (60*0.40 + 20*0.25) / 0.65 ; composite = raw_average * 0.65
+    # (the 0.65 cancels the division - this is intentionally just the weighted_sum)
+    expected = 60.0 * 0.40 + 20.0 * 0.25
     assert result.value == round(expected, 2)
+
+
+def test_composite_score_sparse_data_cannot_outrank_complete_data():
+    """The bug this test guards against: a country with ONLY alliance
+    data (e.g. NATO membership, no trade/energy) must NOT outscore a
+    country with real trade+energy+alliance data, even if that one
+    alliance score is the max possible (100)."""
+    from app.services.scoring_service import ScoreResult
+
+    alliance_only = composite_score(
+        ScoreResult(None, True, "missing"),
+        ScoreResult(None, True, "missing"),
+        ScoreResult(100.0, False, ""),
+    )
+    full_data_moderate = composite_score(
+        ScoreResult(35.0, False, ""),
+        ScoreResult(10.0, False, ""),
+        ScoreResult(50.0, False, ""),
+    )
+    assert alliance_only.value == 25.0  # 100 * 0.25 weight, confidence-penalized
+    assert full_data_moderate.value < 50  # moderate but complete
+    assert alliance_only.value < full_data_moderate.value
 
 
 def test_composite_score_all_missing_is_insufficient():
