@@ -21,8 +21,13 @@ reporter_iso, partner_iso, hs_sector_code, year, flow_type).
 
 import csv
 import logging
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
+
+BACKEND_DIR = Path(__file__).resolve().parents[1]
+if str(BACKEND_DIR) not in sys.path:
+    sys.path.insert(0, str(BACKEND_DIR))
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
