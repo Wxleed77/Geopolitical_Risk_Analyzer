@@ -1,12 +1,17 @@
+import logging
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.core.db import get_db
 from app.schemas.analyze import AnalyzeRequest, AnalyzeResponse
 from app.services.exposure_service import rank_exposure
+from app.services.llm_client import LLMClient
+from app.services.narrative_service import build_narrative_sections
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/analyze", tags=["analyze"])
 
 # TODO: replace with real cache/DB-backed query log (ConflictQuery table)
@@ -32,14 +37,29 @@ def analyze(payload: AnalyzeRequest, db: Session = Depends(get_db)) -> AnalyzeRe
     query_id = str(uuid.uuid4())
     ranked = rank_exposure(db, payload.country_a, payload.country_b)
 
-    # TODO: narrative_sections/citations require the RAG + agent + critic layer (not built yet)
+    confidence_tags = ["deterministic-scoring-real-data"]
+    narrative_sections = []
+    settings = get_settings()
+    if settings.llm_api_key:
+        try:
+            narrative_sections = build_narrative_sections(
+                ranked, payload.country_a, payload.country_b, LLMClient()
+            )
+            confidence_tags.append("narrative-data-derived-only")
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Narrative generation failed, continuing without it: %s", exc)
+            confidence_tags.append("narrative-generation-failed")
+    else:
+        confidence_tags.append("narrative-skipped-no-llm-api-key")
+
+    # TODO: citations require the RAG layer (not built yet)
     result = AnalyzeResponse(
         query_id=query_id,
         ranked_countries=ranked,
         sector_breakdown=[r.breakdown for r in ranked],
-        narrative_sections=[],
+        narrative_sections=narrative_sections,
         citations=[],
-        confidence_tags=["deterministic-scoring-only", "no-narrative-yet"],
+        confidence_tags=confidence_tags,
     )
     _QUERY_CACHE[query_id] = result
     return result
