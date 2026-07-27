@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.core.db import get_db
 from app.schemas.analyze import AnalyzeRequest, AnalyzeResponse
+from app.agents.critic_agent import review_narrative
 from app.services.exposure_service import rank_exposure
 from app.services.llm_client import LLMClient
 from app.services.narrative_service import build_narrative_sections
@@ -42,10 +43,17 @@ def analyze(payload: AnalyzeRequest, db: Session = Depends(get_db)) -> AnalyzeRe
     settings = get_settings()
     if settings.llm_api_key:
         try:
+            client = LLMClient()
             narrative_sections = build_narrative_sections(
-                ranked, payload.country_a, payload.country_b, LLMClient()
+                ranked, payload.country_a, payload.country_b, client
             )
-            confidence_tags.append("narrative-data-derived-only")
+            narrative_sections, rejected = review_narrative(
+                narrative_sections, ranked, payload.country_a, payload.country_b, client
+            )
+            confidence_tags.append("narrative-critic-reviewed")
+            if rejected:
+                logger.info("Critic rejected %d narrative section(s): %s", len(rejected), rejected)
+                confidence_tags.append(f"critic-rejected-{len(rejected)}-section(s)")
         except Exception as exc:  # noqa: BLE001
             logger.warning("Narrative generation failed, continuing without it: %s", exc)
             confidence_tags.append("narrative-generation-failed")

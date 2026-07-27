@@ -1,0 +1,123 @@
+"""
+Critic agent - the last line of defense against hallucinated narrative.
+
+Two layers, cheapest first:
+1. Numeric grounding (deterministic, no LLM call): every number in the
+   narrative text must be close to a real score the writer was given.
+   Catches blatantly invented statistics for free.
+2. Semantic grounding (LLM call): catches invented events/facts/claims
+   the numeric check can't - e.g. "Japan recently signed a new trade
+   deal" contains no suspicious number but is still a fabrication if
+   the writer was never given that fact.
+
+A section that fails either check is DROPPED from the response, not
+shown with a warning label - a wrong claim reaching the user is worse
+than a missing one.
+"""
+
+import re
+from dataclasses import dataclass
+
+from app.schemas.analyze import NarrativeSection, RankedCountry
+from app.services.llm_client import LLMClient
+from app.services.narrative_service import build_user_prompt
+
+NUMBER_PATTERN = re.compile(r"\d+(?:\.\d+)?")
+TOLERANCE = 1.5  # absolute-point tolerance, allows for rounding in prose
+YEAR_RANGE = (1900, 2100)  # numbers in this range are treated as plausible years, not scores
+
+CRITIC_SYSTEM_PROMPT = (
+    "You are a strict fact-checking critic. You will be given (1) the ONLY "
+    "data the writer was allowed to use, and (2) text the writer produced. "
+    "Check whether the text states any claim, fact, event, or detail NOT "
+    "directly supported by the given data.\n\n"
+    "IMPORTANT - do NOT reject text for referencing information that is "
+    "already present in the data block itself. The data block always names "
+    "the two conflict parties and the country being scored - so it is FINE "
+    "for the text to say the country has trade/energy/alliance ties to "
+    "either or both named parties, since that's just restating what's in "
+    "the data section headers, not a new invented fact. Only FAIL for "
+    "claims that go beyond what's in the data - e.g. specific events, "
+    "deals, dates, motivations, or relationships not present in the data "
+    "block at all.\n\n"
+    "Respond with exactly one line: 'PASS' if every claim is grounded in "
+    "the data (using the rule above), or 'FAIL: <reason>' if the text "
+    "contains something genuinely not supported by the data."
+)
+
+
+@dataclass
+class CriticVerdict:
+    passed: bool
+    reason: str
+
+
+def _known_numbers(country: RankedCountry) -> list[float]:
+    b = country.breakdown
+    return [country.exposure_score, b.trade_score, b.energy_score, b.alliance_score]
+
+
+def check_numeric_grounding(section: NarrativeSection, country: RankedCountry) -> CriticVerdict:
+    known = _known_numbers(country)
+    mentioned = [float(m) for m in NUMBER_PATTERN.findall(section.text)]
+
+    for number in mentioned:
+        if YEAR_RANGE[0] <= number <= YEAR_RANGE[1]:
+            continue  # plausibly a year reference, not a fabricated score
+        if not any(abs(number - k) <= TOLERANCE for k in known):
+            return CriticVerdict(
+                passed=False,
+                reason=f"number {number} in narrative doesn't match any known score {known}",
+            )
+    return CriticVerdict(passed=True, reason="all numbers grounded in known scores")
+
+
+def check_semantic_grounding(section: NarrativeSection, source_data: str, llm: LLMClient) -> CriticVerdict:
+    response = llm.complete(
+        system=CRITIC_SYSTEM_PROMPT,
+        user=f"DATA GIVEN TO WRITER:\n{source_data}\n\nTEXT TO CHECK:\n{section.text}",
+    ).strip()
+
+    if response.upper().startswith("PASS"):
+        return CriticVerdict(passed=True, reason="critic found no unsupported claims")
+    return CriticVerdict(passed=False, reason=response)
+
+
+def _extract_iso(heading: str) -> str:
+    # headings are built as "Name (ISO)" by narrative_service
+    return heading.split("(")[-1].rstrip(")")
+
+
+def review_narrative(
+    sections: list[NarrativeSection],
+    ranked_countries: list[RankedCountry],
+    party_a_iso: str,
+    party_b_iso: str,
+    llm: LLMClient,
+) -> tuple[list[NarrativeSection], list[dict]]:
+    """Returns (accepted_sections, rejected_log) for observability/debugging."""
+    by_iso = {c.iso_code: c for c in ranked_countries}
+    accepted: list[NarrativeSection] = []
+    rejected: list[dict] = []
+
+    for section in sections:
+        iso = _extract_iso(section.heading)
+        country = by_iso.get(iso)
+        if country is None:
+            rejected.append({"heading": section.heading, "reason": "country not found in ranked results"})
+            continue
+
+        numeric_verdict = check_numeric_grounding(section, country)
+        if not numeric_verdict.passed:
+            rejected.append({"heading": section.heading, "reason": numeric_verdict.reason})
+            continue
+
+        source_data = build_user_prompt(country, party_a_iso, party_b_iso)
+        semantic_verdict = check_semantic_grounding(section, source_data, llm)
+        if not semantic_verdict.passed:
+            rejected.append({"heading": section.heading, "reason": semantic_verdict.reason})
+            continue
+
+        accepted.append(section)
+
+    return accepted, rejected

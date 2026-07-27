@@ -28,7 +28,7 @@ SYSTEM_PROMPT = (
 TOP_N_TO_NARRATE = 5
 
 
-def _build_user_prompt(country: RankedCountry, party_a_iso: str, party_b_iso: str) -> str:
+def build_user_prompt(country: RankedCountry, party_a_iso: str, party_b_iso: str) -> str:
     b = country.breakdown
     return (
         f"Country: {country.name} ({country.iso_code})\n"
@@ -50,7 +50,7 @@ def build_narrative_sections(
     for country in ranked_countries[:TOP_N_TO_NARRATE]:
         text = llm.complete(
             system=SYSTEM_PROMPT,
-            user=_build_user_prompt(country, party_a_iso, party_b_iso),
+            user=build_user_prompt(country, party_a_iso, party_b_iso),
         )
         sections.append(
             NarrativeSection(
