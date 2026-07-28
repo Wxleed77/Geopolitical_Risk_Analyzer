@@ -10,7 +10,12 @@ from app.schemas.analyze import AnalyzeRequest, AnalyzeResponse
 from app.agents.critic_agent import review_narrative
 from app.services.exposure_service import rank_exposure
 from app.services.llm_client import LLMClient
-from app.services.narrative_service import build_narrative_sections
+from app.services.narrative_service import (
+    build_case_study_prompt,
+    build_case_study_sections,
+    build_narrative_sections,
+)
+from app.services.rag_service import build_citation, find_relevant_case_studies
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/analyze", tags=["analyze"])
@@ -38,6 +43,9 @@ def analyze(payload: AnalyzeRequest, db: Session = Depends(get_db)) -> AnalyzeRe
     query_id = str(uuid.uuid4())
     ranked = rank_exposure(db, payload.country_a, payload.country_b)
 
+    relevant_cases = find_relevant_case_studies(db, payload.country_a, payload.country_b)
+    citations = [build_citation(case) for case in relevant_cases]
+
     confidence_tags = ["deterministic-scoring-real-data"]
     narrative_sections = []
     settings = get_settings()
@@ -47,8 +55,17 @@ def analyze(payload: AnalyzeRequest, db: Session = Depends(get_db)) -> AnalyzeRe
             narrative_sections = build_narrative_sections(
                 ranked, payload.country_a, payload.country_b, client
             )
+            citation_sources = {case.name: build_case_study_prompt(case) for case in relevant_cases}
+            if relevant_cases:
+                narrative_sections += build_case_study_sections(relevant_cases, client)
+
             narrative_sections, rejected = review_narrative(
-                narrative_sections, ranked, payload.country_a, payload.country_b, client
+                narrative_sections,
+                ranked,
+                payload.country_a,
+                payload.country_b,
+                client,
+                citation_sources=citation_sources,
             )
             confidence_tags.append("narrative-critic-reviewed")
             if rejected:
@@ -60,13 +77,12 @@ def analyze(payload: AnalyzeRequest, db: Session = Depends(get_db)) -> AnalyzeRe
     else:
         confidence_tags.append("narrative-skipped-no-llm-api-key")
 
-    # TODO: citations require the RAG layer (not built yet)
     result = AnalyzeResponse(
         query_id=query_id,
         ranked_countries=ranked,
         sector_breakdown=[r.breakdown for r in ranked],
         narrative_sections=narrative_sections,
-        citations=[],
+        citations=citations,
         confidence_tags=confidence_tags,
     )
     _QUERY_CACHE[query_id] = result

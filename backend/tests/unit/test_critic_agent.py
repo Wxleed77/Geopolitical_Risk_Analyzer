@@ -128,3 +128,49 @@ def test_review_narrative_keeps_grounded_sections():
     accepted, rejected = review_narrative(sections, countries, "USA", "CHN", llm)
     assert len(accepted) == 1
     assert rejected == []
+
+
+def test_review_narrative_handles_qualitative_cited_sections():
+    llm = FakeLLMClient("PASS")
+    sections = [
+        NarrativeSection(
+            heading="US-China Trade War (2018)",
+            text="This precedent shows supply chains shifting to third countries.",
+            tag="qualitative-cited",
+        )
+    ]
+    citation_sources = {"US-China Trade War (2018)": "Case description and documented outcome text."}
+    accepted, rejected = review_narrative(
+        sections, [], "USA", "CHN", llm, citation_sources=citation_sources
+    )
+    assert len(accepted) == 1
+    assert rejected == []
+
+
+def test_review_narrative_rejects_qualitative_cited_without_source_text():
+    llm = FakeLLMClient("PASS")
+    sections = [
+        NarrativeSection(heading="Unknown Case", text="Some text.", tag="qualitative-cited")
+    ]
+    accepted, rejected = review_narrative(sections, [], "USA", "CHN", llm, citation_sources={})
+    assert accepted == []
+    assert len(rejected) == 1
+    assert "no source text" in rejected[0]["reason"]
+
+
+def test_review_narrative_qualitative_cited_skips_numeric_check():
+    """Case study text can legitimately contain real percentages/dates
+    that won't match any country's score - numeric check must not apply."""
+    llm = FakeLLMClient("PASS")
+    sections = [
+        NarrativeSection(
+            heading="Russia-Ukraine War (2022)",
+            text="Germany was roughly 55% dependent on Russian gas before 2022.",
+            tag="qualitative-cited",
+        )
+    ]
+    citation_sources = {"Russia-Ukraine War (2022)": "Germany was ~55% dependent on Russian gas."}
+    accepted, rejected = review_narrative(
+        sections, [], "USA", "CHN", llm, citation_sources=citation_sources
+    )
+    assert len(accepted) == 1  # would have failed numeric check (55 doesn't match any score)

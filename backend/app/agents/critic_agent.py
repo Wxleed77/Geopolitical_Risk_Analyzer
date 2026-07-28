@@ -94,13 +94,37 @@ def review_narrative(
     party_a_iso: str,
     party_b_iso: str,
     llm: LLMClient,
+    citation_sources: dict[str, str] | None = None,
 ) -> tuple[list[NarrativeSection], list[dict]]:
-    """Returns (accepted_sections, rejected_log) for observability/debugging."""
+    """
+    Returns (accepted_sections, rejected_log) for observability/debugging.
+
+    "data-derived" sections: numeric grounding (free) + semantic
+    grounding against the country's score data.
+    "qualitative-cited" sections: semantic grounding ONLY, against the
+    matched case study's text (citation_sources, keyed by heading) -
+    numeric check doesn't apply since case studies legitimately contain
+    real historical figures (dates, percentages) that won't match a
+    country's composite/trade/energy/alliance scores.
+    """
+    citation_sources = citation_sources or {}
     by_iso = {c.iso_code: c for c in ranked_countries}
     accepted: list[NarrativeSection] = []
     rejected: list[dict] = []
 
     for section in sections:
+        if section.tag == "qualitative-cited":
+            source_data = citation_sources.get(section.heading)
+            if source_data is None:
+                rejected.append({"heading": section.heading, "reason": "no source text found for citation"})
+                continue
+            verdict = check_semantic_grounding(section, source_data, llm)
+            if not verdict.passed:
+                rejected.append({"heading": section.heading, "reason": verdict.reason})
+                continue
+            accepted.append(section)
+            continue
+
         iso = _extract_iso(section.heading)
         country = by_iso.get(iso)
         if country is None:
