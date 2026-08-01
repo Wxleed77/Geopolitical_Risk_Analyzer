@@ -1,0 +1,5 @@
+case_name,country_iso,indicator,change_pct,timeframe,source_note
+"Russia-Ukraine War (2022)",DEU,fuel_price,45.0,"within 6 months","European wholesale gas (TTF) prices spiked roughly 4-5x pre-war levels by mid-2022; figure approximates household energy bill impact, illustrative not exact."
+"Russia-Ukraine War (2022)",DEU,cpi,8.7,"year-over-year 2022","Germany's 2022 annual inflation reached its highest level in decades, widely reported around 8-9% YoY, driven substantially by energy costs."
+"US-Iran Tensions / Soleimani Strike (2020)",USA,fuel_price,4.0,"within days","Brent crude jumped roughly 3-4% the day after the strike, then eased within weeks as the crisis did not escalate further."
+"US-China Trade War (2018)",KOR,currency,-5.0,"within 12 months","The Korean won depreciated against the US dollar over 2018 amid broader trade-war/EM pressure; multiple factors contributed, not solely the trade war."

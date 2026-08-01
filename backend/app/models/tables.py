@@ -74,6 +74,17 @@ class ExposureScore(Base):
     composite_score = Column(Float)
 
 
+class HistoricalShockImpact(Base):
+    __tablename__ = "historical_shock_impact"
+    id = Column(Integer, primary_key=True)
+    case_id = Column(Integer, ForeignKey("conflict_case.id"), nullable=False)
+    country_iso = Column(String(3), ForeignKey("country.iso_code"), nullable=False)
+    indicator = Column(String, nullable=False)  # "fuel_price" | "cpi" | "currency"
+    change_pct = Column(Float, nullable=False)
+    timeframe = Column(String, nullable=False)  # e.g. "within 6 months"
+    source_note = Column(Text, nullable=False)
+
+
 class NarrativeReport(Base):
     __tablename__ = "narrative_report"
     id = Column(Integer, primary_key=True)
