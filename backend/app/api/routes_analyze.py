@@ -18,6 +18,7 @@ from app.services.narrative_service import (
     build_narrative_sections,
 )
 from app.services.rag_service import build_citation, find_relevant_case_studies
+from app.services.impact_service import build_impact_sections, build_shock_prompt, get_shock_data_for_case
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/analyze", tags=["analyze"])
@@ -82,6 +83,14 @@ def analyze(payload: AnalyzeRequest, db: Session = Depends(get_db)) -> AnalyzeRe
             citation_sources = {case.name: build_case_study_prompt(case) for case in relevant_cases}
             if relevant_cases:
                 narrative_sections += build_case_study_sections(relevant_cases, client)
+
+            for case in relevant_cases:
+                impacts = get_shock_data_for_case(db, case)
+                if impacts:
+                    impact_sections = build_impact_sections(case, impacts, client)
+                    narrative_sections += impact_sections
+                    for sec in impact_sections:
+                        citation_sources[sec.heading] = build_shock_prompt(case, impacts)
 
             narrative_sections, rejected = review_narrative(
                 narrative_sections,
