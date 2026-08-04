@@ -6,19 +6,22 @@ Every function here is pure — same inputs always produce the same output —
 so it's fully unit-testable against fixtures and auditable in an interview.
 
 Weighting (documented per 5.4 "document your formula's assumptions"):
-    composite = 0.40 * trade_score + 0.35 * energy_score + 0.25 * alliance_score
-This is a v1 default, not derived from data — chosen because trade exposure
-is the most directly observable channel, energy dependency second (fewer
-substitutes short-term), alliance proximity weighted lowest since it's a
-proxy (graph distance) rather than a directly measured economic quantity.
-Override via `weights=` param if you want to experiment/justify differently.
+    composite = 0.45 * trade_score + 0.40 * energy_score + 0.15 * alliance_score
+Revised from an earlier 0.40/0.35/0.25 split: alliance_score is a coarse,
+near-binary signal (100 at 1 hop, 50 at 2 hops) that was letting bare
+treaty membership alone push a country's composite as high as countries
+with real, measured trade+energy exposure - e.g. any NATO member with
+zero trade/energy data against a non-NATO conflict still scored 25.0
+composite under the old weights, on alliance alone. Alliance is now a
+smaller share so it can nudge a ranking but not dominate it when trade/
+energy data is thin or missing. Override via `weights=` param.
 """
 
 from dataclasses import dataclass
 
 import networkx as nx
 
-DEFAULT_WEIGHTS = {"trade": 0.40, "energy": 0.35, "alliance": 0.25}
+DEFAULT_WEIGHTS = {"trade": 0.45, "energy": 0.40, "alliance": 0.15}
 
 # Per FR2 edge case: countries with no data must show "insufficient data",
 # never a silent 0 (a silent 0 misleadingly implies "confirmed no exposure").

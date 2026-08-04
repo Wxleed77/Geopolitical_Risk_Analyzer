@@ -89,8 +89,8 @@ def test_composite_score_weighted_average():
     e = ScoreResult(40.0, False, "")
     a = ScoreResult(20.0, False, "")
     result = composite_score(t, e, a)
-    # 0.40*60 + 0.35*40 + 0.25*20 = 24 + 14 + 5 = 43
-    assert result.value == 43.0
+    # 0.45*60 + 0.40*40 + 0.15*20 = 27 + 16 + 3 = 46
+    assert result.value == 46.0
 
 
 def test_composite_score_renormalizes_on_missing_subscore():
@@ -99,10 +99,10 @@ def test_composite_score_renormalizes_on_missing_subscore():
     e = ScoreResult(None, True, "missing")
     a = ScoreResult(20.0, False, "")
     result = composite_score(t, e, a)
-    # available weight = trade(0.40) + alliance(0.25) = 0.65
-    # raw_average = (60*0.40 + 20*0.25) / 0.65 ; composite = raw_average * 0.65
-    # (the 0.65 cancels the division - this is intentionally just the weighted_sum)
-    expected = 60.0 * 0.40 + 20.0 * 0.25
+    # available weight = trade(0.45) + alliance(0.15) = 0.60
+    # raw_average = (60*0.45 + 20*0.15) / 0.60 ; composite = raw_average * 0.60
+    # (the 0.60 cancels the division - this is intentionally just the weighted_sum)
+    expected = 60.0 * 0.45 + 20.0 * 0.15
     assert result.value == round(expected, 2)
 
 
@@ -123,7 +123,7 @@ def test_composite_score_sparse_data_cannot_outrank_complete_data():
         ScoreResult(10.0, False, ""),
         ScoreResult(50.0, False, ""),
     )
-    assert alliance_only.value == 25.0  # 100 * 0.25 weight, confidence-penalized
+    assert alliance_only.value == 15.0  # 100 * 0.15 weight, confidence-penalized
     assert full_data_moderate.value < 50  # moderate but complete
     assert alliance_only.value < full_data_moderate.value
 
