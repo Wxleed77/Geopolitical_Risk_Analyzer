@@ -38,12 +38,20 @@ def _build_alliance_graph(session: Session) -> nx.Graph:
 
 
 def _get_trade_value(session: Session, reporter: str, partner: str) -> float | None:
-    stmt = select(TradeFlow).where(
-        TradeFlow.reporter_iso == reporter,
-        TradeFlow.partner_iso == partner,
-        TradeFlow.year == DATA_YEAR,
+    # Prefer real "import" rows (from live Comtrade ingestion) over old
+    # "total" seed rows if both exist for the same key - live data should
+    # supersede the placeholder seed data. .first() instead of
+    # scalar_one_or_none() so this never crashes if duplicates exist.
+    stmt = (
+        select(TradeFlow)
+        .where(
+            TradeFlow.reporter_iso == reporter,
+            TradeFlow.partner_iso == partner,
+            TradeFlow.year == DATA_YEAR,
+        )
+        .order_by((TradeFlow.flow_type == "import").desc())
     )
-    row = session.execute(stmt).scalar_one_or_none()
+    row = session.execute(stmt).scalars().first()
     return row.trade_value_usd if row else None
 
 

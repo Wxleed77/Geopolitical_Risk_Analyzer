@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     chroma_persist_dir: str = "./data/chroma"
     news_api_key: str = ""
     eia_api_key: str = ""
+    comtrade_api_key: str = ""
     admin_api_key: str = ""
 
     # LLM provider - OpenRouter (OpenAI-compatible endpoint) used instead of
