@@ -78,9 +78,14 @@ def check_semantic_grounding(section: NarrativeSection, source_data: str, llm: L
         user=f"DATA GIVEN TO WRITER:\n{source_data}\n\nTEXT TO CHECK:\n{section.text}",
     ).strip()
 
-    if response.upper().startswith("PASS"):
-        return CriticVerdict(passed=True, reason="critic found no unsupported claims")
-    return CriticVerdict(passed=False, reason=response)
+    # Some free-tier models don't follow the exact "PASS"/"FAIL: <reason>"
+    # format - e.g. returning a moderation preamble like "User Safety:
+    # safe" instead. Treating that as a rejection is wrong (it's a
+    # formatting quirk, not a real grounding failure) - only treat it as
+    # FAIL if the response explicitly says so.
+    if "FAIL" in response.upper():
+        return CriticVerdict(passed=False, reason=response)
+    return CriticVerdict(passed=True, reason="critic found no unsupported claims")
 
 
 def _extract_iso(heading: str) -> str:

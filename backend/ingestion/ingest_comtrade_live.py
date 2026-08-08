@@ -48,7 +48,7 @@ logger = logging.getLogger(__name__)
 
 API_URL = "https://comtradeapi.un.org/data/v1/get/C/A/HS"
 YEAR = 2023
-SLEEP_SECONDS = 2  # be conservative on the free tier
+SLEEP_SECONDS = 4  # be conservative on the free tier
 
 # Which reporter -> partner pairs to fetch. Add more pairs as needed -
 # each is one API call. WORLD_PARTNER_CODE gets the reporter's total
@@ -81,25 +81,37 @@ def fetch_trade_value(session_http: requests.Session, api_key: str, reporter_iso
         "period": YEAR,
         "cmdCode": "TOTAL",
         "flowCode": "M",  # imports - flip to "X" for exports if you want that direction too
+        # These three force Comtrade to return ONE aggregate row instead
+        # of breaking the same trade down across customs procedure /
+        # transport mode / secondary-partner dimensions. Omitting them is
+        # what caused DEU->WLD to return 2,659 rows earlier - summing
+        # those was wrong (produced $11.9T, ~4-8x too high). This is the
+        # real fix, but still UNTESTED from this sandbox - confirm the
+        # DEU->WLD number lands near $1.5-3T (its real order of magnitude)
+        # after this change, not the $1M or $11.9T we saw before.
+        "customsCode": "C00",
+        "motCode": "0",
+        "partner2Code": "0",
     }
     headers = {"Ocp-Apim-Subscription-Key": api_key}
 
     resp = session_http.get(API_URL, params=params, headers=headers, timeout=30)
+    if resp.status_code == 429:
+        logger.warning("Rate limited on %s -> %s, waiting 15s and retrying once", reporter_iso, partner_iso or "WLD")
+        time.sleep(15)
+        resp = session_http.get(API_URL, params=params, headers=headers, timeout=30)
     resp.raise_for_status()
     data = resp.json().get("data", [])
     if not data:
         return None
     if len(data) > 1:
-        # Comtrade sometimes returns multiple rows for one query (e.g.
-        # different classification versions both reported for the same
-        # year) - summing is a safer default than blindly taking data[0],
-        # which is what silently produced a wrong ~$1M "world total" for
-        # DEU earlier instead of the real ~$1.5T figure. Still worth a
-        # manual look if this fires often - inspect resp.json() directly.
+        # If this still fires after the filter above, something else is
+        # fragmenting the result - print the first raw row so you can see
+        # which field is actually varying, then we can filter on that too.
         logger.warning(
-            "%s -> %s returned %d rows instead of 1 - summing primaryValue "
-            "as a best-effort fix, but verify this is correct",
-            reporter_iso, partner_iso or "WLD", len(data),
+            "%s -> %s STILL returned %d rows after aggregate filters - "
+            "inspect this raw row to find what's varying: %s",
+            reporter_iso, partner_iso or "WLD", len(data), data[0],
         )
     return sum(float(row.get("primaryValue", 0)) for row in data)
 
