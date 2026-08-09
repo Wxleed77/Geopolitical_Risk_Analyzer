@@ -16,6 +16,7 @@ than a missing one.
 """
 
 import re
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
 from app.schemas.analyze import NarrativeSection, RankedCountry
@@ -104,18 +105,25 @@ def review_narrative(
     """
     Returns (accepted_sections, rejected_log) for observability/debugging.
 
-    "data-derived" sections: numeric grounding (free) + semantic
-    grounding against the country's score data.
+    "data-derived" sections: numeric grounding (free, local, runs first)
+    + semantic grounding against the country's score data.
     "qualitative-cited" sections: semantic grounding ONLY, against the
     matched case study's text (citation_sources, keyed by heading) -
     numeric check doesn't apply since case studies legitimately contain
     real historical figures (dates, percentages) that won't match a
     country's composite/trade/energy/alliance scores.
+
+    Two passes: first, cheap local numeric checks run synchronously to
+    filter out sections that fail without spending an LLM call at all.
+    Then the remaining sections' semantic checks (the slow part - one
+    blocking HTTP call each) run through a thread pool instead of a
+    sequential loop, since each section's check is independent of the
+    others.
     """
     citation_sources = citation_sources or {}
     by_iso = {c.iso_code: c for c in ranked_countries}
-    accepted: list[NarrativeSection] = []
     rejected: list[dict] = []
+    pending: list[tuple[NarrativeSection, str]] = []  # (section, source_data) awaiting semantic check
 
     for section in sections:
         if section.tag == "qualitative-cited":
@@ -123,11 +131,7 @@ def review_narrative(
             if source_data is None:
                 rejected.append({"heading": section.heading, "reason": "no source text found for citation"})
                 continue
-            verdict = check_semantic_grounding(section, source_data, llm)
-            if not verdict.passed:
-                rejected.append({"heading": section.heading, "reason": verdict.reason})
-                continue
-            accepted.append(section)
+            pending.append((section, source_data))
             continue
 
         iso = _extract_iso(section.heading)
@@ -141,12 +145,18 @@ def review_narrative(
             rejected.append({"heading": section.heading, "reason": numeric_verdict.reason})
             continue
 
-        source_data = build_user_prompt(country, party_a_iso, party_b_iso)
-        semantic_verdict = check_semantic_grounding(section, source_data, llm)
-        if not semantic_verdict.passed:
-            rejected.append({"heading": section.heading, "reason": semantic_verdict.reason})
-            continue
+        pending.append((section, build_user_prompt(country, party_a_iso, party_b_iso)))
 
-        accepted.append(section)
+    accepted: list[NarrativeSection] = []
+    if pending:
+        with ThreadPoolExecutor(max_workers=min(5, len(pending))) as executor:
+            verdicts = list(
+                executor.map(lambda item: check_semantic_grounding(item[0], item[1], llm), pending)
+            )
+        for (section, _source_data), verdict in zip(pending, verdicts):
+            if verdict.passed:
+                accepted.append(section)
+            else:
+                rejected.append({"heading": section.heading, "reason": verdict.reason})
 
     return accepted, rejected
