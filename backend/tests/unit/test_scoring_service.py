@@ -13,11 +13,13 @@ from app.services.scoring_service import (
 
 # --- trade_score ---
 
-def test_trade_score_basic():
+def test_trade_score_uses_max_not_sum():
+    """The bug this guards against: summing a+b let a much-bigger-economy
+    conflict party dominate the score regardless of the other party."""
     inp = TradeExposureInput("DEU", trade_value_with_a_usd=10_000, trade_value_with_b_usd=5_000,
                               country_total_trade_usd=100_000)
     result = trade_score(inp)
-    assert result.value == 15.0
+    assert result.value == 10.0  # max(10000,5000)/100000*100, NOT (10000+5000)/100000*100=15
     assert not result.insufficient_data
 
 
@@ -29,9 +31,9 @@ def test_trade_score_missing_data_returns_insufficient():
 
 
 def test_trade_score_caps_at_100():
-    inp = TradeExposureInput("XXX", 90_000, 90_000, 100_000)
+    inp = TradeExposureInput("XXX", 150_000, 90_000, 100_000)
     result = trade_score(inp)
-    assert result.value == 100.0
+    assert result.value == 100.0  # max(150000,90000)/100000*100=150%, capped
 
 
 # --- energy_score ---

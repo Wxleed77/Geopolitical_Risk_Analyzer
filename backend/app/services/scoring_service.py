@@ -56,9 +56,16 @@ class ScoreResult:
 
 def trade_score(inp: TradeExposureInput) -> ScoreResult:
     """
-    % of country C's total trade tied to either conflict party, scaled 0-100.
-    Capped at 100 (a country doing >100% notional trade with A+B combined
-    relative to its reported total is a data-quality artifact, not a real score).
+    % of country C's total trade tied to whichever conflict party C
+    trades with MORE, scaled 0-100. Uses max(), not sum(a, b) - summing
+    was a real bug: when one conflict party is a much bigger overall
+    economy (e.g. USA) than the other (e.g. Iran), the sum is
+    dominated entirely by the bigger party's trade, making the score
+    effectively "how much do you trade with the bigger economy"
+    regardless of who the second party even is. max() mirrors
+    energy_score's existing worst-case-exposure approach and actually
+    reflects which party's relationship matters more to this country.
+    Capped at 100 (>100% of reported total trade is a data artifact).
     """
     if (
         inp.trade_value_with_a_usd is None
@@ -68,8 +75,10 @@ def trade_score(inp: TradeExposureInput) -> ScoreResult:
 
     a = inp.trade_value_with_a_usd or 0.0
     b = inp.trade_value_with_b_usd or 0.0
-    pct = ((a + b) / inp.country_total_trade_usd) * 100
-    return ScoreResult(round(min(pct, 100.0), 2), False, f"{a+b:,.0f} USD tied to conflict parties")
+    larger = max(a, b)
+    pct = (larger / inp.country_total_trade_usd) * 100
+    which = "party A" if a >= b else "party B"
+    return ScoreResult(round(min(pct, 100.0), 2), False, f"{larger:,.0f} USD tied to {which} (larger of the two)")
 
 
 def energy_score(inp: EnergyExposureInput) -> ScoreResult:
