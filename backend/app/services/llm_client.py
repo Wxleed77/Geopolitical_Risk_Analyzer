@@ -53,13 +53,25 @@ class LLMClient:
                         {"role": "user", "content": user},
                     ],
                 )
-                return response.choices[0].message.content
+                content = response.choices[0].message.content
+                if not content:
+                    # Some free models return an empty/None completion
+                    # (content filtering, refusal, or just an empty
+                    # response) without raising an exception - that's
+                    # still a failure, not a valid answer. Treat it as
+                    # one so the fallback loop below actually kicks in,
+                    # instead of letting None flow downstream and crash
+                    # on the first .strip() call.
+                    logger.warning("Model %s returned empty/None content, trying next candidate", model)
+                    last_error = RuntimeError(f"{model} returned empty content")
+                    continue
+                return content
             except Exception as exc:  # noqa: BLE001 - deliberately broad, we fall through
                 logger.warning("Model %s failed (%s), trying next candidate", model, exc)
                 last_error = exc
                 continue
 
-        raise RuntimeError(f"All model candidates failed. Last error: {last_error}")
+        raise RuntimeError(f"All model candidates failed or returned empty content. Last error: {last_error}")
 
 
 if __name__ == "__main__":
