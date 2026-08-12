@@ -88,12 +88,12 @@ def run() -> dict:
     if not settings.eia_api_key:
         raise RuntimeError("EIA_API_KEY is not set. Add it to backend/.env (see .env.example).")
 
-    """if FACET_ACTIVITY_IMPORTS == "3":
+    if FACET_ACTIVITY_IMPORTS == "3":
         logger.warning(
             "FACET_ACTIVITY_IMPORTS still looks like an unverified placeholder "
             "(productId is confirmed) - see this file's docstring for how to "
             "find the real 'Imports' activityId before trusting this run's output."
-        )"""
+        )
 
     init_db()
     fetched = 0

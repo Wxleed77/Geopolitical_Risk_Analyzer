@@ -56,13 +56,21 @@ def _get_trade_value(session: Session, reporter: str, partner: str) -> float | N
 
 
 def _get_energy_share(session: Session, country: str, source: str) -> float | None:
+    # A country can have real energy dependency data across MULTIPLE
+    # energy types (crude_oil, natural_gas) for the same source - both
+    # rows are legitimate, not duplicates. Taking the max across types
+    # mirrors energy_score's existing worst-case-exposure design (it
+    # already takes max across the two conflict parties) - now also
+    # applied across energy types within one party.
     stmt = select(EnergyDependency).where(
         EnergyDependency.country_iso == country,
         EnergyDependency.source_country_iso == source,
         EnergyDependency.year == DATA_YEAR,
     )
-    row = session.execute(stmt).scalar_one_or_none()
-    return row.import_share_pct if row else None
+    rows = session.execute(stmt).scalars().all()
+    if not rows:
+        return None
+    return max(row.import_share_pct for row in rows)
 
 
 def rank_exposure(session: Session, party_a_iso: str, party_b_iso: str) -> list[RankedCountry]:
