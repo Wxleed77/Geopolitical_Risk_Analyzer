@@ -3,3 +3,7 @@ case_name,country_iso,indicator,change_pct,timeframe,source_note
 "Russia-Ukraine War (2022)",DEU,cpi,8.7,"year-over-year 2022","Germany's 2022 annual inflation reached its highest level in decades, widely reported around 8-9% YoY, driven substantially by energy costs."
 "US-Iran Tensions / Soleimani Strike (2020)",USA,fuel_price,4.0,"within days","Brent crude jumped roughly 3-4% the day after the strike, then eased within weeks as the crisis did not escalate further."
 "US-China Trade War (2018)",KOR,currency,-5.0,"within 12 months","The Korean won depreciated against the US dollar over 2018 amid broader trade-war/EM pressure; multiple factors contributed, not solely the trade war."
+"1973 Oil Crisis / OAPEC Embargo",USA,fuel_price,40.0,"within 1 month (Nov 1973)","US retail gasoline prices rose about 40% in November 1973 alone, during the OAPEC embargo."
+"1973 Oil Crisis / OAPEC Embargo",USA,cpi,11.0,"annual rate reached by 1974","US annual inflation rose from 3.3% (1972) to 11% (1974), driven substantially by the oil shock."
+"1973 Oil Crisis / OAPEC Embargo",DEU,cpi,7.0,"annual rate reached by 1973","Germany's inflation rose more mildly than the US, from 5.5% (1972) to 7% (1973) - a much smaller jump despite the same global shock."
+"1973 Oil Crisis / OAPEC Embargo",JPN,cpi,23.0,"annual rate reached by 1974","Japan's inflation spiked severely, from 4.8% (1972) to 23% (1974) - among the most severe of major economies, reflecting Japan's heavy oil import dependency at the time."
