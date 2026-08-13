@@ -72,6 +72,12 @@ export default function App() {
 
       <QueryBar countries={countries} onSubmit={handleSubmit} loading={status === "loading"} />
 
+      <WorldMap
+        rankedCountries={result ? result.ranked_countries : []}
+        partyAIso={parties.a}
+        partyBIso={parties.b}
+      />
+
       {status === "idle" && (
         <div className="empty-state">
           <span className="empty-state__cursor">AWAITING QUERY_</span>
@@ -94,14 +100,6 @@ export default function App() {
       {status === "done" && result && (
         <>
           <PipelineStatus tags={result.confidence_tags} />
-
-          {result.ranked_countries.length > 0 && (
-            <WorldMap
-              rankedCountries={result.ranked_countries}
-              partyAIso={parties.a}
-              partyBIso={parties.b}
-            />
-          )}
 
           {result.ranked_countries.length === 0 ? (
             <div className="empty-state">

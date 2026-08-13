@@ -6,21 +6,42 @@ import { NUMERIC_TO_ISO3 } from "../countryCodes.js";
 
 const GEO_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
+// Visible by default so the whole globe is always browsable, even before
+// any analysis has run - intentionally lighter than the panel background
+// so country outlines are actually readable at rest, not just on hover.
+const DEFAULT_FILL = "#2a3540";
+const DEFAULT_FILL_HOVER = "#3a4a58";
+
 export default function WorldMap({ rankedCountries, partyAIso, partyBIso }) {
   const [hovered, setHovered] = useState(null);
 
-  const scoreByIso = Object.fromEntries(rankedCountries.map((c) => [c.iso_code, c]));
+  const scoreByIso = Object.fromEntries((rankedCountries || []).map((c) => [c.iso_code, c]));
+  const hasData = rankedCountries && rankedCountries.length > 0;
 
   function fillFor(iso) {
     if (iso === partyAIso || iso === partyBIso) return "var(--text-primary)";
     const country = scoreByIso[iso];
-    if (!country) return "var(--bg-raised)";
-    return colorForScore(country.exposure_score);
+    if (country) return colorForScore(country.exposure_score);
+    return DEFAULT_FILL;
+  }
+
+  function hoverFillFor(iso) {
+    if (iso === partyAIso || iso === partyBIso) return "var(--text-primary)";
+    const country = scoreByIso[iso];
+    if (country) return colorForScore(country.exposure_score);
+    return DEFAULT_FILL_HOVER;
   }
 
   return (
-    <div className="world-map">
-      <span className="world-map__eyebrow">EXPOSURE MAP</span>
+    <motion.div
+      className="world-map"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.4 }}
+    >
+      <span className="world-map__eyebrow">
+        {hasData ? "EXPOSURE MAP" : "WORLD MAP — run an analysis to color by exposure"}
+      </span>
       <div className="world-map__canvas">
         <ComposableMap
           projectionConfig={{ scale: 148 }}
@@ -28,40 +49,33 @@ export default function WorldMap({ rankedCountries, partyAIso, partyBIso }) {
         >
           <Geographies geography={GEO_URL}>
             {({ geographies }) =>
-              geographies.map((geo, i) => {
+              geographies.map((geo) => {
                 const iso = NUMERIC_TO_ISO3[geo.id];
                 const isConflictParty = iso === partyAIso || iso === partyBIso;
                 const country = iso ? scoreByIso[iso] : null;
-                const isInteractive = isConflictParty || !!country;
 
                 return (
-                  <motion.g key={geo.rsmKey}>
-                    <Geography
-                      geography={geo}
-                      onMouseEnter={() => isInteractive && setHovered({ iso, country, isConflictParty })}
-                      onMouseLeave={() => setHovered(null)}
-                      style={{
-                        default: {
-                          fill: fillFor(iso),
-                          stroke: "var(--bg-void)",
-                          strokeWidth: 0.5,
-                          outline: "none",
-                          cursor: isInteractive ? "pointer" : "default",
-                          opacity: 0,
-                        },
-                        hover: {
-                          fill: fillFor(iso),
-                          stroke: "var(--bg-void)",
-                          strokeWidth: 0.5,
-                          outline: "none",
-                          opacity: isInteractive ? 0.8 : 1,
-                        },
-                      }}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.5, delay: Math.min(i * 0.002, 0.4) }}
-                    />
-                  </motion.g>
+                  <Geography
+                    key={geo.rsmKey}
+                    geography={geo}
+                    onMouseEnter={() => iso && setHovered({ iso, country, isConflictParty })}
+                    onMouseLeave={() => setHovered(null)}
+                    style={{
+                      default: {
+                        fill: fillFor(iso),
+                        stroke: "var(--bg-void)",
+                        strokeWidth: 0.5,
+                        outline: "none",
+                        cursor: iso ? "pointer" : "default",
+                      },
+                      hover: {
+                        fill: hoverFillFor(iso),
+                        stroke: "var(--bg-void)",
+                        strokeWidth: 0.5,
+                        outline: "none",
+                      },
+                    }}
+                  />
                 );
               })
             }
@@ -69,7 +83,7 @@ export default function WorldMap({ rankedCountries, partyAIso, partyBIso }) {
         </ComposableMap>
 
         <AnimatePresence>
-          {hovered && (hovered.country || hovered.isConflictParty) && (
+          {hovered && (
             <motion.div
               className="world-map__tooltip"
               initial={{ opacity: 0, y: 4 }}
@@ -80,23 +94,27 @@ export default function WorldMap({ rankedCountries, partyAIso, partyBIso }) {
               <div className="world-map__tooltip-name">{hovered.iso}</div>
               {hovered.isConflictParty ? (
                 <div className="world-map__tooltip-detail">conflict party</div>
-              ) : (
+              ) : hovered.country ? (
                 <div className="world-map__tooltip-detail">
                   exposure {hovered.country.exposure_score.toFixed(1)}
                 </div>
+              ) : (
+                <div className="world-map__tooltip-detail">no analysis run yet</div>
               )}
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      <div className="world-map__legend">
-        <LegendSwatch color="var(--text-primary)" label="conflict party" />
-        <LegendSwatch color="var(--accent-signal)" label="low" />
-        <LegendSwatch color="var(--accent-warn)" label="medium" />
-        <LegendSwatch color="var(--accent-danger)" label="high" />
-      </div>
-    </div>
+      {hasData && (
+        <div className="world-map__legend">
+          <LegendSwatch color="var(--text-primary)" label="conflict party" />
+          <LegendSwatch color="var(--accent-signal)" label="low" />
+          <LegendSwatch color="var(--accent-warn)" label="medium" />
+          <LegendSwatch color="var(--accent-danger)" label="high" />
+        </div>
+      )}
+    </motion.div>
   );
 }
 
