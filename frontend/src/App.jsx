@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { fetchCountries, analyzeConflict } from "./api.js";
 import QueryBar from "./components/QueryBar.jsx";
 import PipelineStatus from "./components/PipelineStatus.jsx";
+import WorldMap from "./components/WorldMap.jsx";
 import CountryRow from "./components/CountryRow.jsx";
 import CitationList from "./components/CitationList.jsx";
 
@@ -11,12 +12,20 @@ function matchNarrative(sections, isoCode) {
   );
 }
 
+function extractPartiesFromTags(tags) {
+  const tag = tags.find((t) => t.startsWith("parties-extracted-from-raw_input:"));
+  if (!tag) return null;
+  const [a, b] = tag.split(":")[1].split("-vs-");
+  return { a, b };
+}
+
 export default function App() {
   const [countries, setCountries] = useState([]);
   const [status, setStatus] = useState("idle"); // idle | loading | done | error
   const [result, setResult] = useState(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [liveTick, setLiveTick] = useState(true);
+  const [parties, setParties] = useState({ a: null, b: null });
 
   useEffect(() => {
     fetchCountries().then(setCountries).catch(() => setCountries([]));
@@ -30,8 +39,15 @@ export default function App() {
   async function handleSubmit(payload) {
     setStatus("loading");
     setErrorMsg("");
+    if (payload.country_a && payload.country_b) {
+      setParties({ a: payload.country_a, b: payload.country_b });
+    }
     try {
       const data = await analyzeConflict(payload);
+      if (!payload.country_a) {
+        const extracted = extractPartiesFromTags(data.confidence_tags);
+        if (extracted) setParties(extracted);
+      }
       setResult(data);
       setStatus("done");
     } catch (err) {
@@ -78,6 +94,14 @@ export default function App() {
       {status === "done" && result && (
         <>
           <PipelineStatus tags={result.confidence_tags} />
+
+          {result.ranked_countries.length > 0 && (
+            <WorldMap
+              rankedCountries={result.ranked_countries}
+              partyAIso={parties.a}
+              partyBIso={parties.b}
+            />
+          )}
 
           {result.ranked_countries.length === 0 ? (
             <div className="empty-state">

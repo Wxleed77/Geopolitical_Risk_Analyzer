@@ -1,10 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-
-function colorForScore(score) {
-  if (score >= 66) return "var(--accent-danger)";
-  if (score >= 33) return "var(--accent-warn)";
-  return "var(--accent-signal)";
-}
+import { colorForScore } from "../colorScale.js";
 
 const RADIUS = 30;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
