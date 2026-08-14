@@ -490,6 +490,123 @@ button {
 
 /* ===== Responsive ===== */
 
+/* ===== Topbar view toggle ===== */
+
+.topbar__right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.view-toggle {
+  display: flex;
+  gap: 6px;
+}
+
+/* ===== Backtest panel ===== */
+
+.backtest__eyebrow {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  margin-bottom: 14px;
+}
+
+.backtest__cases {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.backtest-case {
+  text-align: left;
+  background: var(--bg-panel);
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.backtest-case:hover {
+  border-color: var(--text-muted);
+}
+.backtest-case--selected {
+  border-color: var(--accent-signal);
+}
+
+.backtest-case__name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.backtest-case__meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.backtest__run {
+  margin-bottom: 20px;
+}
+
+.backtest__results {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.backtest__column {
+  display: flex;
+  flex-direction: column;
+}
+
+.backtest__column-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+
+.backtest__column-label--secondary {
+  margin-top: 16px;
+}
+
+.backtest__outcome {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  background: var(--bg-panel);
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  padding: 14px;
+}
+
+.backtest__outcome--muted {
+  color: var(--text-muted);
+}
+
+.backtest__empty {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+@media (max-width: 700px) {
+  .backtest__results {
+    grid-template-columns: 1fr;
+  }
+  .topbar {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+}
+
 @media (max-width: 560px) {
   .country-row {
     grid-template-columns: 1fr;

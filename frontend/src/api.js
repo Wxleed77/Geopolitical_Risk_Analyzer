@@ -23,3 +23,14 @@ export function analyzeConflict(payload) {
     body: JSON.stringify(payload),
   });
 }
+
+export function fetchBacktestCases() {
+  return request("/backtest/cases");
+}
+
+export function runBacktest(caseId, cutoffDate) {
+  return request(`/backtest/${caseId}/run`, {
+    method: "POST",
+    body: JSON.stringify({ cutoff_date: cutoffDate }),
+  });
+}

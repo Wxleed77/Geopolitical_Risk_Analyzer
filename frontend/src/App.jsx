@@ -5,6 +5,7 @@ import PipelineStatus from "./components/PipelineStatus.jsx";
 import WorldMap from "./components/WorldMap.jsx";
 import CountryRow from "./components/CountryRow.jsx";
 import CitationList from "./components/CitationList.jsx";
+import BacktestPanel from "./components/BacktestPanel.jsx";
 
 function matchNarrative(sections, isoCode) {
   return sections.find(
@@ -26,6 +27,7 @@ export default function App() {
   const [errorMsg, setErrorMsg] = useState("");
   const [liveTick, setLiveTick] = useState(true);
   const [parties, setParties] = useState({ a: null, b: null });
+  const [view, setView] = useState("analyze"); // "analyze" | "backtest"
 
   useEffect(() => {
     fetchCountries().then(setCountries).catch(() => setCountries([]));
@@ -64,12 +66,32 @@ export default function App() {
     <div className="app">
       <header className="topbar">
         <span className="topbar__title">▚ CONFLICT EXPOSURE ANALYZER</span>
-        <span className="topbar__status">
-          <span className={"status-dot" + (liveTick ? " status-dot--on" : "")} />
-          {status === "loading" ? "computing" : "live"}
-        </span>
+        <div className="topbar__right">
+          <div className="view-toggle">
+            <button
+              className={"mode-toggle" + (view === "analyze" ? " mode-toggle--active" : "")}
+              onClick={() => setView("analyze")}
+            >
+              ANALYZE
+            </button>
+            <button
+              className={"mode-toggle" + (view === "backtest" ? " mode-toggle--active" : "")}
+              onClick={() => setView("backtest")}
+            >
+              BACKTEST
+            </button>
+          </div>
+          <span className="topbar__status">
+            <span className={"status-dot" + (liveTick ? " status-dot--on" : "")} />
+            {status === "loading" ? "computing" : "live"}
+          </span>
+        </div>
       </header>
 
+      {view === "backtest" ? (
+        <BacktestPanel />
+      ) : (
+        <>
       <QueryBar countries={countries} onSubmit={handleSubmit} loading={status === "loading"} />
 
       <WorldMap
@@ -123,6 +145,8 @@ export default function App() {
           )}
 
           <CitationList citations={result.citations} precedentSections={precedentSections} />
+        </>
+      )}
         </>
       )}
     </div>
