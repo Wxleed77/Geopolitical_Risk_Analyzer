@@ -659,3 +659,136 @@ button {
   font-size: 11px;
   color: var(--text-dim);
 }
+
+/* ===== Shock comparison chart ===== */
+
+.shock-chart {
+  margin-top: 20px;
+  padding: 16px;
+  background: var(--bg-panel);
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+}
+
+.shock-chart__eyebrow {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  margin-bottom: 14px;
+}
+
+.shock-chart__case {
+  margin-bottom: 16px;
+}
+.shock-chart__case:last-of-type {
+  margin-bottom: 0;
+}
+
+.shock-chart__case-name {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 10px;
+}
+
+.shock-bar {
+  display: grid;
+  grid-template-columns: 110px 1fr 56px;
+  grid-template-areas:
+    "label track value"
+    "label timeframe timeframe";
+  align-items: center;
+  column-gap: 10px;
+  padding: 6px 0;
+}
+
+.shock-bar__label {
+  grid-area: label;
+  display: flex;
+  flex-direction: column;
+}
+
+.shock-bar__country {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.shock-bar__indicator {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.shock-bar__track {
+  grid-area: track;
+  position: relative;
+  height: 10px;
+  background: var(--bg-void);
+  border-radius: 2px;
+}
+
+.shock-bar__zero {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--hairline);
+}
+
+.shock-bar__fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 2px;
+}
+
+.shock-bar__value {
+  grid-area: value;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-primary);
+  text-align: right;
+}
+
+.shock-bar__timeframe {
+  grid-area: timeframe;
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.shock-chart__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--hairline);
+}
+
+.shock-chart__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.shock-chart__legend-swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+@media (max-width: 500px) {
+  .shock-bar {
+    grid-template-columns: 90px 1fr 50px;
+  }
+}

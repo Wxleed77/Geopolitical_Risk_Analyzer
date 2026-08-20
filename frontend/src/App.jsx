@@ -5,6 +5,7 @@ import PipelineStatus from "./components/PipelineStatus.jsx";
 import WorldMap from "./components/WorldMap.jsx";
 import CountryRow from "./components/CountryRow.jsx";
 import CitationList from "./components/CitationList.jsx";
+import ShockComparisonChart from "./components/ShockComparisonChart.jsx";
 import BacktestPanel from "./components/BacktestPanel.jsx";
 import AnalysisProgress from "./components/AnalysisProgress.jsx";
 
@@ -140,6 +141,8 @@ export default function App() {
               ))}
             </div>
           )}
+
+          <ShockComparisonChart shocks={result.historical_shocks} />
 
           <CitationList citations={result.citations} precedentSections={precedentSections} />
         </>

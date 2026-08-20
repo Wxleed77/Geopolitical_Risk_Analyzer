@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.core.db import get_db
-from app.schemas.analyze import AnalyzeRequest, AnalyzeResponse
+from app.schemas.analyze import AnalyzeRequest, AnalyzeResponse, ShockDataPoint
 from app.agents.context_agent import extract_conflict_parties
 from app.agents.critic_agent import review_narrative
 from app.models.tables import Country
@@ -70,6 +70,21 @@ def analyze(payload: AnalyzeRequest, db: Session = Depends(get_db)) -> AnalyzeRe
     relevant_cases = find_relevant_case_studies(db, country_a, country_b)
     citations = [build_citation(case) for case in relevant_cases]
 
+    # Pure DB query, no LLM needed - the chart gets real numbers even
+    # without an LLM_API_KEY set, unlike the narrative paragraph below.
+    shocks_by_case = {case.id: get_shock_data_for_case(db, case) for case in relevant_cases}
+    historical_shocks = [
+        ShockDataPoint(
+            case_name=case.name,
+            country_iso=impact.country_iso,
+            indicator=impact.indicator,
+            change_pct=impact.change_pct,
+            timeframe=impact.timeframe,
+        )
+        for case in relevant_cases
+        for impact in shocks_by_case[case.id]
+    ]
+
     confidence_tags = ["deterministic-scoring-real-data"]
     if extracted_via_context_agent:
         confidence_tags.append(f"parties-extracted-from-raw_input:{country_a}-vs-{country_b}")
@@ -85,7 +100,7 @@ def analyze(payload: AnalyzeRequest, db: Session = Depends(get_db)) -> AnalyzeRe
                 narrative_sections += build_case_study_sections(relevant_cases, client)
 
             for case in relevant_cases:
-                impacts = get_shock_data_for_case(db, case)
+                impacts = shocks_by_case[case.id]
                 if impacts:
                     impact_sections = build_impact_sections(case, impacts, client)
                     narrative_sections += impact_sections
@@ -116,6 +131,7 @@ def analyze(payload: AnalyzeRequest, db: Session = Depends(get_db)) -> AnalyzeRe
         sector_breakdown=[r.breakdown for r in ranked],
         narrative_sections=narrative_sections,
         citations=citations,
+        historical_shocks=historical_shocks,
         confidence_tags=confidence_tags,
     )
     _QUERY_CACHE[query_id] = result

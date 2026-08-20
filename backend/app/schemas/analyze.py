@@ -37,12 +37,24 @@ class Citation(BaseModel):
     snippet: Optional[str] = None
 
 
+class ShockDataPoint(BaseModel):
+    """Real historical indicator movement backing a case-study citation -
+    the actual number, not the LLM's paraphrase of it, so the frontend
+    can chart it directly instead of parsing prose."""
+    case_name: str
+    country_iso: str
+    indicator: str  # "fuel_price" | "cpi" | "currency"
+    change_pct: float
+    timeframe: str
+
+
 class AnalyzeResponse(BaseModel):
     query_id: str
     ranked_countries: list[RankedCountry]
     sector_breakdown: list[SectorBreakdown]
     narrative_sections: list[NarrativeSection]
     citations: list[Citation]
+    historical_shocks: list[ShockDataPoint] = []
     confidence_tags: list[str]
 
 
