@@ -6,6 +6,7 @@ import WorldMap from "./components/WorldMap.jsx";
 import CountryRow from "./components/CountryRow.jsx";
 import CitationList from "./components/CitationList.jsx";
 import BacktestPanel from "./components/BacktestPanel.jsx";
+import AnalysisProgress from "./components/AnalysisProgress.jsx";
 
 function matchNarrative(sections, isoCode) {
   return sections.find(
@@ -106,11 +107,7 @@ export default function App() {
         </div>
       )}
 
-      {status === "loading" && (
-        <div className="empty-state">
-          <span className="empty-state__cursor">COMPUTING EXPOSURE..._</span>
-        </div>
-      )}
+      {status === "loading" && <AnalysisProgress />}
 
       {status === "error" && (
         <div className="error-state">

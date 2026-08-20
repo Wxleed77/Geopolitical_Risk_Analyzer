@@ -622,3 +622,40 @@ button {
     align-items: stretch;
   }
 }
+
+/* ===== Analysis progress (estimated, not live backend signal) ===== */
+
+.analysis-progress {
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.analysis-progress__stage {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-primary);
+  margin-bottom: 14px;
+}
+
+.analysis-progress__track {
+  max-width: 320px;
+  height: 3px;
+  margin: 0 auto 10px;
+  background: var(--hairline);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.analysis-progress__fill {
+  height: 100%;
+  background: var(--accent-signal);
+  border-radius: 2px;
+  transition: width 0.15s linear;
+}
+
+.analysis-progress__elapsed {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
