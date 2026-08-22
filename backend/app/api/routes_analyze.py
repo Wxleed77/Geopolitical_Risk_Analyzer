@@ -19,6 +19,7 @@ from app.services.narrative_service import (
 )
 from app.services.rag_service import build_citation, find_relevant_case_studies
 from app.services.impact_service import build_impact_sections, build_shock_prompt, get_shock_data_for_case
+from app.services.curated_service import build_curated_response, find_curated_conflict
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/analyze", tags=["analyze"])
@@ -65,6 +66,25 @@ def analyze(payload: AnalyzeRequest, db: Session = Depends(get_db)) -> AnalyzeRe
         extracted_via_context_agent = True
 
     query_id = str(uuid.uuid4())
+
+    curated = find_curated_conflict(db, country_a, country_b)
+    if curated is not None:
+        curated_data = build_curated_response(db, curated)
+        result = AnalyzeResponse(
+            query_id=query_id,
+            ranked_countries=curated_data["ranked_countries"],
+            sector_breakdown=[r.breakdown for r in curated_data["ranked_countries"]],
+            narrative_sections=curated_data["narrative_sections"],
+            citations=curated_data["citations"],
+            historical_shocks=[],
+            confidence_tags=[
+                "curated-verified-analysis",
+                f"last-verified:{curated_data['last_verified']}",
+            ],
+        )
+        _QUERY_CACHE[query_id] = result
+        return result
+
     ranked = rank_exposure(db, country_a, country_b)
 
     relevant_cases = find_relevant_case_studies(db, country_a, country_b)
@@ -85,7 +105,7 @@ def analyze(payload: AnalyzeRequest, db: Session = Depends(get_db)) -> AnalyzeRe
         for impact in shocks_by_case[case.id]
     ]
 
-    confidence_tags = ["deterministic-scoring-real-data"]
+    confidence_tags = ["exploratory-estimate-limited-data", "deterministic-scoring-real-data"]
     if extracted_via_context_agent:
         confidence_tags.append(f"parties-extracted-from-raw_input:{country_a}-vs-{country_b}")
 

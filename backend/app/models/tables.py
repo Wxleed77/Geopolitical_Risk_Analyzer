@@ -85,6 +85,37 @@ class HistoricalShockImpact(Base):
     source_note = Column(Text, nullable=False)
 
 
+class CuratedConflict(Base):
+    """
+    Human/AI-researched, source-cited analysis for a specific known
+    real-world conflict pair - NOT computed by the scoring formula.
+    Exists because the deterministic engine's country coverage (~27
+    countries, hand-seeded/live-fetched for a handful of pairs) is too
+    narrow to give good answers for major real conflicts (e.g. it can't
+    even produce Taiwan for a USA-China query, since Taiwan was never
+    in the dataset at all). This is the "verified" tier - checked
+    against real research, not a live formula output.
+    """
+    __tablename__ = "curated_conflict"
+    id = Column(Integer, primary_key=True)
+    country_a_iso = Column(String(3), ForeignKey("country.iso_code"), nullable=False)
+    country_b_iso = Column(String(3), ForeignKey("country.iso_code"), nullable=False)
+    title = Column(String, nullable=False)
+    overview = Column(Text, nullable=False)
+    last_verified = Column(Date, nullable=False)
+
+
+class CuratedCountryImpact(Base):
+    __tablename__ = "curated_country_impact"
+    id = Column(Integer, primary_key=True)
+    curated_conflict_id = Column(Integer, ForeignKey("curated_conflict.id"), nullable=False)
+    country_iso = Column(String(3), ForeignKey("country.iso_code"), nullable=False)
+    tier = Column(String, nullable=False)  # "high" | "medium" | "low"
+    rank_order = Column(Integer, nullable=False)  # display order within the whole list
+    reason = Column(Text, nullable=False)
+    source_note = Column(Text, nullable=False)
+
+
 class NarrativeReport(Base):
     __tablename__ = "narrative_report"
     id = Column(Integer, primary_key=True)

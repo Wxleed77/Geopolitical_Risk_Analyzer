@@ -8,10 +8,11 @@ import CitationList from "./components/CitationList.jsx";
 import ShockComparisonChart from "./components/ShockComparisonChart.jsx";
 import BacktestPanel from "./components/BacktestPanel.jsx";
 import AnalysisProgress from "./components/AnalysisProgress.jsx";
+import VerificationBanner from "./components/VerificationBanner.jsx";
 
 function matchNarrative(sections, isoCode) {
   return sections.find(
-    (s) => s.tag === "data-derived" && s.heading.includes(`(${isoCode})`)
+    (s) => (s.tag === "data-derived" || s.tag === "curated-verified") && s.heading.includes(`(${isoCode})`)
   );
 }
 
@@ -119,6 +120,7 @@ export default function App() {
 
       {status === "done" && result && (
         <>
+          <VerificationBanner tags={result.confidence_tags} />
           <PipelineStatus tags={result.confidence_tags} />
 
           {result.ranked_countries.length === 0 ? (
