@@ -70,13 +70,32 @@ def analyze(payload: AnalyzeRequest, db: Session = Depends(get_db)) -> AnalyzeRe
     curated = find_curated_conflict(db, country_a, country_b)
     if curated is not None:
         curated_data = build_curated_response(db, curated)
+
+        # Curated results skip the LLM narrative pipeline, but real
+        # historical shock data (real numbers, no LLM needed to fetch)
+        # is still directly relevant context - pull it the same way the
+        # exploratory path does, so the chart isn't empty just because
+        # this conflict happens to be curated.
+        relevant_cases = find_relevant_case_studies(db, country_a, country_b)
+        historical_shocks = [
+            ShockDataPoint(
+                case_name=case.name,
+                country_iso=impact.country_iso,
+                indicator=impact.indicator,
+                change_pct=impact.change_pct,
+                timeframe=impact.timeframe,
+            )
+            for case in relevant_cases
+            for impact in get_shock_data_for_case(db, case)
+        ]
+
         result = AnalyzeResponse(
             query_id=query_id,
             ranked_countries=curated_data["ranked_countries"],
             sector_breakdown=[r.breakdown for r in curated_data["ranked_countries"]],
             narrative_sections=curated_data["narrative_sections"],
             citations=curated_data["citations"],
-            historical_shocks=[],
+            historical_shocks=historical_shocks,
             confidence_tags=[
                 "curated-verified-analysis",
                 f"last-verified:{curated_data['last_verified']}",
